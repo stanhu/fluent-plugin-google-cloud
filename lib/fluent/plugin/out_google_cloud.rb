@@ -1708,15 +1708,19 @@ module Fluent
             extracted_fields[destination_key] = casted_value
           end
 
-          next unless extracted_subfields
+          next if extracted_subfields.empty?
 
-          output = if @use_grpc
-                     Object.const_get(grpc_class).new
-                   else
-                     Object.const_get(non_grpc_class).new
-                   end
-          extracted_subfields.each do |key, value|
-            output.send("#{key}=", value)
+          if @use_grpc
+            # gRPC proto does not allow setting fields post class initiation
+            # if the field value is a Ruby hash.
+            output = Object.const_get(grpc_class).new(extracted_subfields)
+          else
+            # REST class does not allow passing in params when initiating
+            # the class.
+            output = Object.const_get(non_grpc_class).new
+            extracted_subfields.each do |key, value|
+              output.send("#{key}=", value)
+            end
           end
 
           record.delete(payload_key) if fields.empty?
