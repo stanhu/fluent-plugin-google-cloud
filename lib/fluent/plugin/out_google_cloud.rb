@@ -149,6 +149,7 @@ module Fluent
       DEFAULT_TRACE_KEY = 'logging.googleapis.com/trace'.freeze
       DEFAULT_SPAN_ID_KEY = 'logging.googleapis.com/spanId'.freeze
       DEFAULT_INSERT_ID_KEY = 'logging.googleapis.com/insertId'.freeze
+      DEFAULT_METADATA_KEY = 'logging.googleapis.com/metadata'.freeze
 
       DEFAULT_METADATA_AGENT_URL =
         'http://local-metadata-agent.stackdriver.com:8000'.freeze
@@ -221,6 +222,14 @@ module Fluent
           ],
           'Google::Logging::V2::LogEntryOperation',
           'Google::Apis::LoggingV2::LogEntryOperation'
+        ],
+        'metadata' => [
+          '@metadata_key',
+          [
+            %w(userLabels user_labels parse_hash)
+          ],
+          'Google::Api::MonitoredResourceMetadata',
+          'Google::Apis::LoggingV2::MonitoredResourceMetadata'
         ]
       }.freeze
 
@@ -301,6 +310,7 @@ module Fluent
     config_param :trace_key, :string, :default => DEFAULT_TRACE_KEY
     config_param :span_id_key, :string, :default => DEFAULT_SPAN_ID_KEY
     config_param :insert_id_key, :string, :default => DEFAULT_INSERT_ID_KEY
+    config_param :metadata_key, :string, :default => DEFAULT_METADATA_KEY
 
     # Whether to try to detect if the record is a text log entry with JSON
     # content that needs to be parsed.
@@ -618,6 +628,7 @@ module Fluent
               @http_request_key,
               @insert_id_key,
               @operation_key,
+              @metadata_key,
               @source_location_key,
               @span_id_key,
               @trace_key
@@ -1724,7 +1735,6 @@ module Fluent
           end
 
           record.delete(payload_key) if fields.empty?
-
           entry.send("#{field_name}=", output)
         rescue StandardError => err
           @log.error "Failed to set log entry field for #{field_name}.", err
@@ -1842,6 +1852,16 @@ module Fluent
 
     def parse_bool(value)
       [true, 'true', 1].include?(value)
+    end
+
+    # Return a hash where both keys and values are strings. Otherwise return
+    # nil.
+    def parse_hash(value)
+      return nil if value.nil? || !value.is_a?(Hash)
+      value.each do |k, v|
+        return nil unless k.is_a?(String) && v.is_a?(String)
+      end
+      value
     end
 
     def parse_latency(latency)

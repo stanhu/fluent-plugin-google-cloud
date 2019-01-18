@@ -1257,6 +1257,10 @@ module BaseTest
     verify_subfields_from_record(DEFAULT_OPERATION_KEY)
   end
 
+  def test_log_entry_metadata_field_from_record
+    verify_subfields_from_record(DEFAULT_METADATA_KEY)
+  end
+
   # Verify the subfields extraction of LogEntry fields when there are other
   # fields.
 
@@ -1270,6 +1274,10 @@ module BaseTest
 
   def test_log_entry_operation_field_partial_from_record
     verify_subfields_partial_from_record(DEFAULT_OPERATION_KEY)
+  end
+
+  def test_log_entry_metadata_field_partial_from_record
+    verify_subfields_partial_from_record(DEFAULT_METADATA_KEY)
   end
 
   # Verify the subfields extraction of LogEntry fields when they are not hashes.
@@ -1286,6 +1294,16 @@ module BaseTest
     verify_subfields_when_not_hash(DEFAULT_OPERATION_KEY)
   end
 
+  def test_log_entry_metadata_field_when_not_hash
+    verify_subfields_when_not_hash(DEFAULT_METADATA_KEY)
+  end
+
+  # metadata -> user_labels have to be pure string hashes. This means the keys
+  # and values all have to be string.
+  def test_log_entry_metadata_field_when_not_a_string_hash
+    verify_subfields_when_not_a_string_hash(DEFAULT_METADATA_KEY)
+  end
+
   # Verify the subfields extraction of LogEntry fields when they are nil.
 
   def test_log_entry_http_request_field_when_nil
@@ -1298,6 +1316,10 @@ module BaseTest
 
   def test_log_entry_operation_field_when_nil
     verify_subfields_when_nil(DEFAULT_OPERATION_KEY)
+  end
+
+  def test_log_entry_metadata_field_when_nil
+    verify_subfields_when_nil(DEFAULT_METADATA_KEY)
   end
 
   def test_http_request_from_record_with_referer_nil_or_absent
@@ -1386,6 +1408,11 @@ module BaseTest
                      CONFIG_CUSTOM_TRACE_KEY_SPECIFIED, TRACE)
   end
 
+  def test_log_entry_metadata_field
+    verify_field_key('metadata', DEFAULT_METADATA_KEY, 'custom_metadata_key',
+                     CONFIG_CUSTOM_METADATA_KEY_SPECIFIED, METADATA_MESSAGE)
+  end
+
   # Verify the cascading JSON detection of LogEntry fields.
 
   def test_cascading_json_detection_with_log_entry_insert_id_field
@@ -1422,6 +1449,13 @@ module BaseTest
       'trace', DEFAULT_TRACE_KEY,
       root_level_value: TRACE,
       nested_level_value: TRACE2)
+  end
+
+  def test_cascading_json_detection_with_log_entry_metadata_field
+    verify_cascading_json_detection_with_log_entry_fields(
+      'metadata', DEFAULT_METADATA_KEY,
+      root_level_value: METADATA_MESSAGE,
+      nested_level_value: METADATA_MESSAGE2)
   end
 
   # Metadata Agent related tests.
@@ -2173,7 +2207,8 @@ module BaseTest
       DEFAULT_SOURCE_LOCATION_KEY => [
         'sourceLocation', source_location_message],
       DEFAULT_OPERATION_KEY => [
-        'operation', OPERATION_MESSAGE]
+        'operation', OPERATION_MESSAGE],
+      DEFAULT_METADATA_KEY => ['metadata', METADATA_MESSAGE]
     }
   end
 
@@ -2222,6 +2257,27 @@ module BaseTest
     verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
       field = get_fields(entry['jsonPayload'])[payload_key]
       assert_equal 'a_string', get_string(field), entry
+      assert_false entry.key?(destination_key), entry
+    end
+  end
+
+  def verify_subfields_when_not_a_string_hash(payload_key)
+    destination_key = log_entry_subfields_params[payload_key][0]
+    @logs_sent = []
+    setup_gce_metadata_stubs
+    setup_logging_stubs do
+      d = create_driver
+      # The value in the hash is not a pure string.
+      d.emit(payload_key => { 'a_string' => { 'nested' => 'hash' } })
+      d.run
+    end
+    verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
+      fields = get_fields(
+        get_struct(get_fields(entry['jsonPayload'])[payload_key]))
+      assert_equal 1, fields.size, entry
+      a_string_value = get_fields(get_struct(fields['a_string']))
+      assert_equal 1, a_string_value.size, entry
+      assert_equal 'hash', get_string(a_string_value['nested']), entry
       assert_false entry.key?(destination_key), entry
     end
   end
@@ -2290,7 +2346,6 @@ module BaseTest
     # }
     log_entry_with_both_level_fields = log_entry_with_nested_level_field.merge(
       default_key => root_level_value)
-
     {
       log_entry_with_root_level_field => expected_value_from_root,
       log_entry_with_nested_level_field => expected_value_from_nested,
@@ -2330,6 +2385,7 @@ module BaseTest
       {
         # By default, it sets log entry field via a default key.
         driver_config: APPLICATION_DEFAULT_CONFIG,
+
         emitted_log: { 'msg' => message, default_key => sample_value },
         expected_payload: { 'msg' => message },
         expected_field_value: sample_value

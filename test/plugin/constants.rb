@@ -391,6 +391,10 @@ module Constants
     trace_key custom_trace_key
   ).freeze
 
+  CONFIG_CUSTOM_METADATA_KEY_SPECIFIED = %(
+    metadata_key custom_metadata_key
+  ).freeze
+
   # Service configurations for various services.
 
   # GCE.
@@ -781,6 +785,20 @@ module Constants
     'last' => false
   }.freeze
 
+  METADATA_MESSAGE = {
+    'userLabels' => {
+      'user-label-1' => 'value-1',
+      'user-label-2' => 'value-2'
+    }
+  }.freeze
+
+  METADATA_MESSAGE2 = {
+    'userLabels' => {
+      'user-label-1' => 'value-2',
+      'user-label-2' => 'value-1'
+    }
+  }.freeze
+
   CUSTOM_LABELS_MESSAGE = {
     'customKey' => 'value'
   }.freeze
@@ -980,6 +998,7 @@ module Constants
     'severity' => CONTAINER_SEVERITY,
     DEFAULT_HTTP_REQUEST_KEY => HTTP_REQUEST_MESSAGE,
     DEFAULT_INSERT_ID_KEY => INSERT_ID,
+    DEFAULT_METADATA_KEY => METADATA_MESSAGE,
     DEFAULT_OPERATION_KEY => OPERATION_MESSAGE,
     DEFAULT_SOURCE_LOCATION_KEY => SOURCE_LOCATION_MESSAGE,
     DEFAULT_SPAN_ID_KEY => SPAN_ID,
