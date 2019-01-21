@@ -1713,9 +1713,13 @@ module Fluent
             rescue TypeError
               @log.error "Failed to #{cast_fn} for #{field_name}." \
                          "#{original_key} with value #{value.inspect}.", err
+              fields[original_key] = value
               next
             end
-            next if casted_value.nil?
+            if casted_value.nil?
+              fields[original_key] = value
+              next
+            end
             extracted_fields[destination_key] = casted_value
           end
 

@@ -1298,10 +1298,16 @@ module BaseTest
     verify_subfields_when_not_hash(DEFAULT_METADATA_KEY)
   end
 
-  # metadata -> user_labels have to be pure string hashes. This means the keys
+  # metadata -> userLabels has to be a hash.
+  def test_log_entry_metadata_field_when_not_a_nested_hash
+    verify_subfields_when_not_a_nested_hash(DEFAULT_METADATA_KEY, 'userLabels')
+  end
+
+  # metadata -> userLabels has to be a pure string hash. This means the keys
   # and values all have to be string.
-  def test_log_entry_metadata_field_when_not_a_string_hash
-    verify_subfields_when_not_a_string_hash(DEFAULT_METADATA_KEY)
+  def test_log_entry_metadata_field_when_not_a_nested_string_hash
+    verify_subfields_when_not_a_nested_string_hash(
+      DEFAULT_METADATA_KEY, 'userLabels')
   end
 
   # Verify the subfields extraction of LogEntry fields when they are nil.
@@ -2261,23 +2267,47 @@ module BaseTest
     end
   end
 
-  def verify_subfields_when_not_a_string_hash(payload_key)
+  def verify_subfields_when_not_a_nested_hash(payload_key, subfield_key)
     destination_key = log_entry_subfields_params[payload_key][0]
     @logs_sent = []
     setup_gce_metadata_stubs
     setup_logging_stubs do
       d = create_driver
-      # The value in the hash is not a pure string.
-      d.emit(payload_key => { 'a_string' => { 'nested' => 'hash' } })
+      # The value in the subfield is not a hash.
+      d.emit(payload_key => { subfield_key => 'a_string' })
       d.run
     end
     verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
       fields = get_fields(
         get_struct(get_fields(entry['jsonPayload'])[payload_key]))
       assert_equal 1, fields.size, entry
-      a_string_value = get_fields(get_struct(fields['a_string']))
-      assert_equal 1, a_string_value.size, entry
-      assert_equal 'hash', get_string(a_string_value['nested']), entry
+      assert_equal 'a_string', get_string(fields[subfield_key]), entry
+      assert_false entry.key?(destination_key), entry
+    end
+  end
+
+  def verify_subfields_when_not_a_nested_string_hash(payload_key, subfield_key)
+    destination_key = log_entry_subfields_params[payload_key][0]
+    @logs_sent = []
+    setup_gce_metadata_stubs
+    setup_logging_stubs do
+      d = create_driver
+      # The value in the subfield is not a pure string hash.
+      d.emit(
+        payload_key => {
+          subfield_key => { 'a_string' => { 'nested' => 'hash' } }
+        }
+      )
+      d.run
+    end
+    verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
+      fields = get_fields(
+        get_struct(get_fields(entry['jsonPayload'])[payload_key]))
+      assert_equal 1, fields.size, entry
+      nested_hash = get_fields(get_struct(fields[subfield_key]))
+      assert_equal 1, nested_hash.size, entry
+      assert_equal 'hash', get_string(
+        get_fields(get_struct(nested_hash['a_string']))['nested']), entry
       assert_false entry.key?(destination_key), entry
     end
   end
