@@ -1713,17 +1713,16 @@ module Fluent
             rescue TypeError
               @log.error "Failed to #{cast_fn} for #{field_name}." \
                          "#{original_key} with value #{value.inspect}.", err
-              fields[original_key] = value
               next
             end
-            if casted_value.nil?
-              fields[original_key] = value
-              next
-            end
+            next if casted_value.nil?
             extracted_fields[destination_key] = casted_value
           end
 
-          next if extracted_subfields.empty?
+          if extracted_subfields.empty?
+            record.delete(payload_key)
+            next
+          end
 
           if @use_grpc
             # gRPC proto does not allow setting fields post class initiation

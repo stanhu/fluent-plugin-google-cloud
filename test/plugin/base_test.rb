@@ -2278,10 +2278,8 @@ module BaseTest
       d.run
     end
     verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
-      fields = get_fields(
-        get_struct(get_fields(entry['jsonPayload'])[payload_key]))
-      assert_equal 1, fields.size, entry
-      assert_equal 'a_string', get_string(fields[subfield_key]), entry
+      fields = get_fields(entry['jsonPayload'])
+      assert_equal 0, fields.size, entry
       assert_false entry.key?(destination_key), entry
     end
   end
@@ -2301,13 +2299,8 @@ module BaseTest
       d.run
     end
     verify_log_entries(1, COMPUTE_PARAMS, 'jsonPayload') do |entry|
-      fields = get_fields(
-        get_struct(get_fields(entry['jsonPayload'])[payload_key]))
-      assert_equal 1, fields.size, entry
-      nested_hash = get_fields(get_struct(fields[subfield_key]))
-      assert_equal 1, nested_hash.size, entry
-      assert_equal 'hash', get_string(
-        get_fields(get_struct(nested_hash['a_string']))['nested']), entry
+      fields = get_fields(entry['jsonPayload'])
+      assert_equal 0, fields.size, entry
       assert_false entry.key?(destination_key), entry
     end
   end
