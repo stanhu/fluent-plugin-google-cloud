@@ -583,7 +583,6 @@ module Fluent
 
     def start
       super
-      init_api_client
       @successful_call = false
       @timenanos_warning = false
     end
@@ -2031,33 +2030,16 @@ module Fluent
         user_agent = \
           "#{PLUGIN_NAME}/#{PLUGIN_VERSION} grpc-ruby/#{GRPC::VERSION} " \
           "#{Google::Apis::OS_VERSION}"
-        @client = Google::Cloud::Logging::V2::LoggingServiceV2Client.new(
-          credentials: GRPC::Core::Channel.new(
-            "#{host}#{port}", { 'grpc.primary_user_agent' => user_agent },
-            creds))
       else
         # TODO: Use a non-default ClientOptions object.
         Google::Apis::ClientOptions.default.application_name = PLUGIN_NAME
         Google::Apis::ClientOptions.default.application_version = PLUGIN_VERSION
-        @client = Google::Apis::LoggingV2::LoggingService.new
-        @client.authorization = Google::Auth.get_application_default(
-          LOGGING_SCOPE)
       end
     end
 
     def api_client
       # For gRPC side, the Channel will take care of tokens and their renewal
       # (https://grpc.io/docs/guides/auth.html#authentication-api).
-      if !@use_grpc && @client.authorization.expired?
-        begin
-          @client.authorization.fetch_access_token!
-        rescue MultiJson::ParseError
-          # Workaround an issue in the API client; just re-raise a more
-          # descriptive error for the user (which will still cause a retry).
-          raise Google::APIClient::ClientError,
-                'Unable to fetch access token (no scopes configured?)'
-        end
-      end
       @client
     end
 
