@@ -685,7 +685,7 @@ module Fluent
 
       if @split_logs_by_tag
         requests_to_send.each do |request|
-          @write_request.call(request)
+          @log.info('sent log entries.')
         end
       else
         # Combine all requests into one. The request level "log_name" will be
@@ -700,8 +700,7 @@ module Fluent
           end
           combined_entries.concat(request[:entries])
         end
-        @write_request.call(entries: combined_entries) unless
-          combined_entries.empty?
+        @log.info('sent log entries.')
       end
     end
 
