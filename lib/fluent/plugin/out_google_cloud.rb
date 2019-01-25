@@ -37,43 +37,9 @@ module Fluent
 
     PLUGIN_NAME = 'Fluentd Google Cloud Logging plugin'.freeze
 
-    config_param :detect_json, :bool, :default => false
-    config_param :k8s_cluster_name, :string, :default => nil
-    config_param :k8s_cluster_location, :string, :default => nil
-    config_param :enable_monitoring, :bool, :default => false
-    config_param :monitoring_type, :string, :default => nil
-    config_param :split_logs_by_tag, :bool, :default => false
-    config_param :detect_subservice, :bool, :default => true
-    config_param :use_grpc, :bool, :default => false
-    config_param :adjust_invalid_timestamps, :bool, :default => true
-
-    # rubocop:enable Style/HashSyntax
-
-    def initialize
-      super
-      # use the global logger
-      @log = $log # rubocop:disable Style/GlobalVars
-    end
-
-    def configure(conf)
-      super
-    end
-
-    def start
-      super
-      @successful_call = false
-      @timenanos_warning = false
-    end
-
-    def shutdown
-      super
-    end
-
     def write(chunk)
       @log.info 'pretent to write log entries.'
     end
-
-    private
 
     def format(tag, time, record)
       Fluent::Engine.msgpack_factory.packer.write([tag, time, record]).to_s
