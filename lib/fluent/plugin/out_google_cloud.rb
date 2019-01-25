@@ -29,36 +29,6 @@ require 'googleauth'
 
 require_relative 'monitoring'
 
-module Google
-  module Protobuf
-    # Alias the has_key? method to have the same interface as a regular map.
-    class Map
-      alias key? has_key?
-    end
-  end
-end
-
-module Google
-  module Auth
-    # Extract project_id in initialize.
-    class ServiceAccountCredentials
-      singleton_class.send(:alias_method, :super_make_creds, :make_creds)
-      def self.make_creds(options = {})
-        json_key_io, scope = options.values_at(:json_key_io, :scope)
-        if json_key_io
-          json_key = MultiJson.load(json_key_io.read)
-          project_id = json_key['project_id']
-        end
-        creds = super_make_creds(
-          json_key_io: StringIO.new(MultiJson.dump(json_key)), scope: scope)
-        creds.instance_variable_set(:@project_id, project_id) if project_id
-        creds
-      end
-      attr_reader :project_id
-    end
-  end
-end
-
 module Fluent
   # fluentd output plugin for the Stackdriver Logging API
   class GoogleCloudOutput < BufferedOutput
@@ -183,24 +153,6 @@ module Fluent
     Fluent::Plugin.register_output('google_cloud', self)
 
     PLUGIN_NAME = 'Fluentd Google Cloud Logging plugin'.freeze
-
-    PLUGIN_VERSION = begin
-      # Extract plugin version from file path.
-      match_data = __FILE__.match(
-        %r{fluent-plugin-google-cloud-(?<version>[0-9a-zA-Z\.]*)/})
-      if match_data
-        match_data['version']
-      else
-        # Extract plugin version by finding the spec this file was loaded from.
-        dependency = Gem::Dependency.new('fluent-plugin-google-cloud')
-        all_specs, = Gem::SpecFetcher.fetcher.spec_for_dependency(dependency)
-        matching_version, = all_specs.grep(
-          proc { |spec,| __FILE__.include?(spec.full_gem_path) }) do |spec,|
-            spec.version.to_s
-          end
-        matching_version
-      end
-    end.freeze
 
     # Name of the the Google cloud logging write scope.
     LOGGING_SCOPE = 'https://www.googleapis.com/auth/logging.write'.freeze
