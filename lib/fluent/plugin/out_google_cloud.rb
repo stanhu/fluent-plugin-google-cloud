@@ -501,22 +501,6 @@ module Fluent
         ]
       end
 
-      # Determine the common labels that should be added to all log entries
-      # processed by this logging agent.
-      @common_labels = determine_agent_level_common_labels
-
-      # The resource and labels are now set up; ensure they can't be modified
-      # without first duping them.
-      @resource.freeze
-      @resource.labels.freeze
-      @common_labels.freeze
-
-      if [Platform::GCE, Platform::EC2].include?(@platform)
-        # Log an informational message containing the Logs viewer URL
-        @log.info 'Logs viewer address: https://console.cloud.google.com/logs/',
-                  "viewer?project=#{@project_id}&resource=#{@resource.type}/",
-                  "instance_id/#{@vm_id}"
-      end
     end
 
     def start
