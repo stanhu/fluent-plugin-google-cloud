@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-require 'google/apis'
-require 'google/apis/logging_v2'
-require 'google/cloud/logging/v2'
-require 'google/gax'
-require 'google/logging/v2/logging_pb'
-require 'google/logging/v2/logging_services_pb'
-require 'google/logging/v2/log_entry_pb'
-require 'googleauth'
+require 'erb'
+require 'grpc'
+require 'json'
+require 'open-uri'
+require 'socket'
+require 'time'
+require 'yaml'
 
 require_relative 'monitoring'
 
