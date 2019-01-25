@@ -37,47 +37,16 @@ module Fluent
 
     PLUGIN_NAME = 'Fluentd Google Cloud Logging plugin'.freeze
 
-    config_param :use_metadata_service, :bool, :default => true
-    config_param :use_aws_availability_zone, :bool, :default => true
-    config_param :project_id, :string, :default => nil
-    config_param :zone, :string, :default => nil
-    config_param :vm_id, :string, :default => nil
-    config_param :vm_name, :string, :default => nil
+    config_param :detect_json, :bool, :default => false
     config_param :k8s_cluster_name, :string, :default => nil
     config_param :k8s_cluster_location, :string, :default => nil
-    config_param :http_request_key, :string, :default => nil
-    config_param :operation_key, :string, :default => nil
-    config_param :source_location_key, :string, :default => nil
-    config_param :trace_key, :string, :default => nil
-    config_param :span_id_key, :string, :default => nil
-    config_param :insert_id_key, :string, :default => nil
-    config_param :detect_json, :bool, :default => false
-    config_param :detect_subservice, :bool, :default => true
-    config_param :subservice_name, :string, :default => nil
-    config_param :require_valid_tags, :bool, :default => false
-    config_param :kubernetes_tag_regexp, :string, :default =>
-      '\.(?<pod_name>[^_]+)_(?<namespace_name>[^_]+)_(?<container_name>.+)$'
-    config_param :label_map, :hash, :default => nil
-    config_param :labels, :hash, :default => nil
-    config_param :use_grpc, :bool, :default => false
-    config_param :partial_success, :bool, :default => true
-    config_param :coerce_to_utf8, :bool, :default => true
-    config_param :non_utf8_replacement_string, :string, :default => ' '
-    config_param :auth_method, :string, :default => nil
-    config_param :private_key_email, :string, :default => nil
-    config_param :private_key_path, :string, :default => nil
-    config_param :private_key_passphrase, :string,
-                 :default => nil,
-                 :secret => true
-    config_param :logging_api_url, :string, :default => nil
     config_param :enable_monitoring, :bool, :default => false
     config_param :monitoring_type, :string,
                  :default => Monitoring::PrometheusMonitoringRegistry.name
-    config_param :enable_metadata_agent, :bool, :default => false
-    config_param :metadata_agent_url, :string, :default => nil
     config_param :split_logs_by_tag, :bool, :default => false
+    config_param :detect_subservice, :bool, :default => true
+    config_param :use_grpc, :bool, :default => false
     config_param :adjust_invalid_timestamps, :bool, :default => true
-    config_param :autoformat_stackdriver_trace, :bool, :default => true
 
     # rubocop:enable Style/HashSyntax
 
