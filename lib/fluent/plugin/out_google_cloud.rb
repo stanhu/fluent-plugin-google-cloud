@@ -41,8 +41,7 @@ module Fluent
     config_param :k8s_cluster_name, :string, :default => nil
     config_param :k8s_cluster_location, :string, :default => nil
     config_param :enable_monitoring, :bool, :default => false
-    config_param :monitoring_type, :string,
-                 :default => Monitoring::PrometheusMonitoringRegistry.name
+    config_param :monitoring_type, :string, :default => nil
     config_param :split_logs_by_tag, :bool, :default => false
     config_param :detect_subservice, :bool, :default => true
     config_param :use_grpc, :bool, :default => false
@@ -76,65 +75,8 @@ module Fluent
 
     private
 
-    # "enum" of Platform values
-    module Platform
-      OTHER = 0  # Other/unkown platform
-      GCE = 1    # Google Compute Engine
-      EC2 = 2    # Amazon EC2
-    end
-
     def format(tag, time, record)
       Fluent::Engine.msgpack_factory.packer.write([tag, time, record]).to_s
-    end
-
-    # Increment the metric for the number of successful requests.
-    def increment_successful_requests_count
-      return unless @successful_requests_count
-      @successful_requests_count.increment(grpc: @use_grpc, code: @ok_code)
-    end
-
-    # Increment the metric for the number of failed requests, labeled by
-    # the provided status code.
-    def increment_failed_requests_count(code)
-      return unless @failed_requests_count
-      @failed_requests_count.increment(grpc: @use_grpc, code: code)
-    end
-
-    # Increment the metric for the number of log entries, successfully
-    # ingested by the Stackdriver Logging API.
-    def increment_ingested_entries_count(count)
-      return unless @ingested_entries_count
-      @ingested_entries_count.increment({ grpc: @use_grpc, code: @ok_code },
-                                        count)
-    end
-
-    # Increment the metric for the number of log entries that were dropped
-    # and not ingested by the Stackdriver Logging API.
-    def increment_dropped_entries_count(count, code)
-      return unless @dropped_entries_count
-      @dropped_entries_count.increment({ grpc: @use_grpc, code: code }, count)
-    end
-
-    # Increment the metric for the number of log entries that were dropped
-    # and not ingested by the Stackdriver Logging API.
-    def increment_retried_entries_count(count, code)
-      return unless @retried_entries_count
-      @retried_entries_count.increment({ grpc: @use_grpc, code: code }, count)
-    end
-  end
-end
-
-module Google
-  module Apis
-    module LoggingV2
-      # Override MonitoredResource::dup to make a deep copy.
-      class MonitoredResource
-        def dup
-          ret = super
-          ret.labels = labels.dup
-          ret
-        end
-      end
     end
   end
 end
