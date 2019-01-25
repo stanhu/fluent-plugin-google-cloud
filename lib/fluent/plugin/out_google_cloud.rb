@@ -463,44 +463,6 @@ module Fluent
       end
 
       set_regexp_patterns
-
-      @platform = detect_platform
-
-      # Treat an empty setting of the credentials file path environment variable
-      # as unset. This way the googleauth lib could fetch the credentials
-      # following the fallback path.
-      ENV.delete(CREDENTIALS_PATH_ENV_VAR) if
-        ENV[CREDENTIALS_PATH_ENV_VAR] == ''
-
-      # Set required variables: @project_id, @vm_id, @vm_name and @zone.
-      set_required_metadata_variables
-
-      # Retrieve monitored resource.
-      # Fail over to retrieve monitored resource via the legacy path if we fail
-      # to get it from Metadata Agent.
-      @resource ||= determine_agent_level_monitored_resource_via_legacy
-
-      # Set regexp that we should match tags against later on. Using a list
-      # instead of a map to ensure order. For example, tags will be matched
-      # against Cloud Functions first, then GKE.
-      @tag_regexp_list = []
-      if @resource.type == GKE_CONSTANTS[:resource_type]
-        # We only support Cloud Functions logs for GKE right now.
-        if fetch_gce_metadata('instance/attributes/'
-                             ).split.include?('gcf_region')
-          # Fetch this info and store it to avoid recurring
-          # metadata server calls.
-          @gcf_region = fetch_gce_metadata('instance/attributes/gcf_region')
-          @tag_regexp_list << [
-            CLOUDFUNCTIONS_CONSTANTS[:resource_type],
-            @compiled_cloudfunctions_tag_regexp
-          ]
-        end
-        @tag_regexp_list << [
-          GKE_CONSTANTS[:resource_type], @compiled_kubernetes_tag_regexp
-        ]
-      end
-
     end
 
     def start
@@ -758,37 +720,6 @@ module Fluent
       @log.error "Failed to set monitored resource labels for #{type}: ",
                  error: e
       {}
-    end
-
-    # Determine the common labels that should be added to all log entries
-    # processed by this logging agent.
-    def determine_agent_level_common_labels
-      labels = {}
-      # User can specify labels via config. We want to capture those as well.
-      labels.merge!(@labels) if @labels
-
-      case @resource.type
-      # GAE, Cloud Dataflow, Cloud Dataproc and Cloud ML.
-      when APPENGINE_CONSTANTS[:resource_type],
-           DATAFLOW_CONSTANTS[:resource_type],
-           DATAPROC_CONSTANTS[:resource_type],
-           ML_CONSTANTS[:resource_type]
-        labels.merge!(
-          "#{COMPUTE_CONSTANTS[:service]}/resource_id" => @vm_id,
-          "#{COMPUTE_CONSTANTS[:service]}/resource_name" => @vm_name,
-          "#{COMPUTE_CONSTANTS[:service]}/zone" => @zone
-        )
-
-      # GCE instance and GKE container.
-      when COMPUTE_CONSTANTS[:resource_type],
-           GKE_CONSTANTS[:resource_type]
-        labels["#{COMPUTE_CONSTANTS[:service]}/resource_name"] = @vm_name
-
-      # EC2.
-      when EC2_CONSTANTS[:resource_type]
-        labels["#{EC2_CONSTANTS[:service]}/resource_name"] = @vm_name
-      end
-      labels
     end
 
     # TODO: This functionality should eventually be available in another
