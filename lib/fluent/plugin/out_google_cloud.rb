@@ -849,40 +849,6 @@ module Fluent
       Fluent::Engine.msgpack_factory.packer.write([tag, time, record]).to_s
     end
 
-    def init_api_client
-      if @use_grpc
-        uri = URI.parse(@logging_api_url)
-        host = uri.host
-        unless host
-          raise Fluent::ConfigError,
-                'The logging_api_url option specifies an invalid URL:' \
-                " #{@logging_api_url}."
-        end
-        if uri.scheme == 'https'
-          ssl_creds = GRPC::Core::ChannelCredentials.new
-          authentication = Google::Auth.get_application_default
-          creds = GRPC::Core::CallCredentials.new(authentication.updater_proc)
-          creds = ssl_creds.compose(creds)
-        else
-          creds = :this_channel_is_insecure
-        end
-        port = ":#{uri.port}" if uri.port
-        user_agent = \
-          "#{PLUGIN_NAME}/#{PLUGIN_VERSION} grpc-ruby/#{GRPC::VERSION} " \
-          "#{Google::Apis::OS_VERSION}"
-      else
-        # TODO: Use a non-default ClientOptions object.
-        Google::Apis::ClientOptions.default.application_name = PLUGIN_NAME
-        Google::Apis::ClientOptions.default.application_version = PLUGIN_VERSION
-      end
-    end
-
-    def api_client
-      # For gRPC side, the Channel will take care of tokens and their renewal
-      # (https://grpc.io/docs/guides/auth.html#authentication-api).
-      @client
-    end
-
     # Increment the metric for the number of successful requests.
     def increment_successful_requests_count
       return unless @successful_requests_count
